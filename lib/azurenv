@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+
+const { readFileSync, writeFileSync } = require('fs');
+
+const [config] = process.argv.slice(2);
+
+const getFile = path => JSON.parse(readFileSync(process.cwd() + '/' + path));
+const setLocalSettings = data => writeFileSync(process.cwd() + '/local.settings.json', JSON.stringify(data, null, 2));
+
+try {
+    const localSettings = getFile('local.settings.json');
+    const envFile = getFile(`.env.${config}.json`);
+
+    const changed = {}
+
+    for (const [key, value] of Object.entries(envFile.Values)) {
+        if (localSettings.Values[key] !== value) {
+            localSettings.Values[key] = value;
+            changed[key] = value;
+        }
+    }
+
+    setLocalSettings(localSettings);
+    console.group(`Changed environment to ${config}. Updated:`);
+    console.log(changed);
+    console.groupEnd();
+
+} catch (error) {
+    console.log("Probably not in a azure functions repository");
+    console.error(error);
+}

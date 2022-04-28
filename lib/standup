@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+
+const exec = require('util').promisify(require('child_process').exec);
+
+const BASE_URL = 'https://meet.google.com/'
+
+const links = [
+  // Start of Sprint
+  'gno-baaz-wvt',
+  'gno-baaz-wvt',
+  'gno-baaz-wvt',
+  'xah-gcjd-dhp',
+  'xah-gcjd-dhp',
+  // Work week is over. These weekend links will never get used, but they make logic easier
+  'saturday',
+  'sunday',
+  // Start of second week into Sprint
+  'gno-baaz-wvt',
+  'gno-baaz-wvt',
+  'gno-baaz-wvt',
+  'jby-scrn-wir', // Retro 
+  'nya-rakh-pia', // Planning
+  // Sprint over
+  'saturday',
+  'sunday',
+]
+
+const fixedDate = new Date('Oct 4 2021')
+const now = new Date()
+
+const diff = Math.floor((now.getTime() - fixedDate.getTime()) / (1000 * 3600 * 24)) // Diff in days
+
+const CHROME = `"/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome"`
+
+exec(`${CHROME} ${BASE_URL}${links[diff % links.length]}`)

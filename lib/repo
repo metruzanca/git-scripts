@@ -1,0 +1,104 @@
+#!/usr/bin/env node
+
+const META = { v: 'v0.0.2' }
+
+// Example URL for Azure
+// https://dev.azure.com/agencywithin/AWPL/_git/poc-fe
+
+// Example SSH url
+// git@ssh.dev.azure.com:v3/agencywithin/AWPL/poc-fe
+
+// Example PR url
+// https://dev.azure.com/agencywithin/AWPL/_git/poc-fe/pullrequestcreate?sourceRef=fix/1720-fieldarray-be-gone
+
+const exec = require('util').promisify(require('child_process').exec);
+
+function openUrl(url) {
+    switch(process.platform) {
+        case 'linux':
+        case 'darwin': return exec(`open ${url}`);
+        default: {
+            console.log('Sorry, I don\'t support windows.')
+            return;
+        }
+    }
+}
+
+
+class Repository {
+    static parseExecOuput = process => process.stdout.trim()
+    constructor() {
+        if (!this.isRepo()) throw new Error('Not a git repository');
+    }
+    async isRepo() {
+        try {
+            await exec(`git status`)
+            return true;
+        } catch (error) {
+            console.error(error)
+            return false;
+        }
+    }
+    async branchName() {
+        return await exec(`git rev-parse --abbrev-ref HEAD`).then(Repository.parseExecOuput)
+    }
+    async remoteUrl(origin = 'origin') {
+        return await exec(`git remote get-url ${origin}`).then(Repository.parseExecOuput)
+    }
+    // Currently unused.
+    async pushNewBranch(origin = 'origin', branch = this.branchName()) {
+        try {
+            await exec(`git push --set-upstream ${origin} ${branch}`)
+            return true;
+        } catch (error) {
+            console.error(error)
+            return false;
+        }
+    }
+    static async basename() {
+        return await exec('basename $(pwd)').then(Repository.parseExecOuput)
+    }
+    static getRepositoryURL(cloneUrl) {
+        if (cloneUrl.startsWith('git@')) {
+            const [org, project, repo] = cloneUrl.split('/').slice(-3)
+            const repoUrl = `https://dev.azure.com/${org}/${project}/_git/${repo}`
+            return repoUrl
+        }
+    }
+
+    static getPrUrl(cloneUrl, branchName) {
+        const repoUrl = Repository.getRepositoryURL(cloneUrl)
+        return repoUrl + `/pullrequestcreate?sourceRef=${branchName}`;
+    }
+}
+
+main(process.argv.slice(2));
+/**@param {any[]} options */
+async function main(options) {
+    console.log(`Azure Repo CLI ${META.v}`)
+    if (options.includes('--help')) {
+        console.log([
+            'By default this opens the repository in browser',
+            '--pr : Will open the create PR page for this repository and the current branch.'
+        ].join('\n'));
+        return;
+    }
+    let git;
+    
+    try {
+        git = new Repository()
+    } catch (error) {
+        console.log(`${process.cwd()} is not a git repository.`);
+        return;
+    }
+    
+    const cloneUrl = await git.remoteUrl()
+    if (options.includes('--pr')) {
+        const branchName = await git.branchName()
+        console.log(`Opening PR page for ${branchName} of ${await Repository.basename()} in browser.`)
+        await openUrl(Repository.getPrUrl(cloneUrl, branchName))
+    } else {
+        console.log(`Opening the ${await Repository.basename()} repository in browser.`)
+        await openUrl(Repository.getRepositoryURL(cloneUrl))
+    }
+}
