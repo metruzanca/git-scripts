@@ -10,6 +10,7 @@ git config --global alias.initial "!sh $PWD/bin/initial.sh";
 git config --global alias.master "!sh $PWD/bin/master.sh";
 git config --global alias.new "!sh $PWD/bin/new.sh";
 git config --global alias.pr "!node $PWD/bin/pr.js";
+git config --global alias.pub "!sh $PWD/bin/publish.sh";
 # git config --global alias.pr "!node $PWD/bin/sync.js"; # WIP
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
